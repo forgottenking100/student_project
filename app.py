@@ -33,7 +33,7 @@ def login_flow():
         user_dashboard(username)
 
 def user_dashboard(username):
-    print(f"\nWelcome to your dashboard, {username}!")
+    print(f"\nWelcome to your database dashboard, {username}!")
     input("Press Enter to log out...")
     print("Logged out successfully.")
 
@@ -52,4 +52,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

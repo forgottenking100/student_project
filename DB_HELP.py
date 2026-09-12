@@ -1,61 +1,78 @@
-import json
-import os
-import hashlib
+import sqlite3 as st
 
-DB_FILE = "users.json"
+DB_FILE = "users.db"
 
 def init_db():
-    """Creates the JSON file database if it doesn't exist."""
-    if not os.path.exists(DB_FILE):
-        with open(DB_FILE, "w") as f:
-            json.dump({}, f)
+    """Creates the SQLite database and users table if they do not exist."""
+    conn = st.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
-def hash_password(password):
-    """Secures the password using standard SHA-256 hashing."""
-    salt = "some_secure_unique_salt_string"
-    salted_pass = password + salt
-    return hashlib.sha256(salted_pass.encode()).hexdigest()
+def manual_hash(password):
+    """Manually scrambles a password using pure math character shifts."""
+    scrambled_chars = []
+    shift_key = 7
+    
+    for i in range(len(password)):
+        # Calculate a dynamic mathematical shift per character
+        char_code = ord(password[i])
+        dynamic_shift = char_code + shift_key + i
+        scrambled_chars.append(str(dynamic_shift))
+        
+    # Join with a delimiter to safely separate values
+    return "-".join(scrambled_chars)
 
 def register_user(username, email, password):
-    """Saves user data if the username does not already exist."""
+    """Saves a new user record into the database."""
     init_db()
+    conn = st.connect(DB_FILE)
+    cursor = conn.cursor()
+    secure_password = manual_hash(password)
     
-    with open(DB_FILE, "r") as f:
-        users = json.load(f)
-        
-    if username in users:
-        return False, "Username already exists."
-        
-    # Check if email is already taken
-    for user_data in users.values():
-        if user_data["email"] == email:
+    try:
+        cursor.execute(
+            "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+            (username, email, secure_password)
+        )
+        conn.commit()
+        return True, "Registration successful!"
+    except st.IntegrityError as e:
+        error_msg = str(e)
+        if "username" in error_msg:
+            return False, "Username already exists."
+        elif "email" in error_msg:
             return False, "Email already exists."
-            
-    # Save the user with a hashed password
-    users[username] = {
-        "email": email,
-        "password": hash_password(password)
-    }
-    
-    with open(DB_FILE, "w") as f:
-        json.dump(users, f, indent=4)
-        
-    return True, "Registration successful!"
+        return False, "Username or Email already exists."
+    finally:
+        conn.close()
 
 def authenticate_user(username, password):
-    """Checks credentials against the stored password hash."""
+    """Checks user credentials against the stored SQLite database row."""
     init_db()
+    conn = st.connect(DB_FILE)
+    cursor = conn.cursor()
     
-    with open(DB_FILE, "r") as f:
-        users = json.load(f)
-        
-    if username not in users:
+    cursor.execute("SELECT password FROM users WHERE username = ?", (username,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
         return False, "User not found."
         
-    stored_hash = users[username]["password"]
-    provided_hash = hash_password(password)
+    # Extract the plain text value out of the query row tuple
+    stored_scramble = row[0]
+    provided_scramble = manual_hash(password)
     
-    if stored_hash == provided_hash:
+    if stored_scramble == provided_scramble:
         return True, "Login successful!"
         
     return False, "Invalid password."
