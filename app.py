@@ -1,5 +1,5 @@
 from os import name
-
+import openpyxl
 import pandas as pd  # Structure data for the grid view
 import streamlit as st
 from datetime import datetime  # Imported datetime to track login timestamps
@@ -104,6 +104,12 @@ def main():
                 st.session_state.current_page = "Contact"
                 st.rerun()
 
+            # File Management Menu Item
+            dn_type = "primary" if st.session_state.current_page == "File Management" else "secondary"
+            if st.button("💾 File Management", type=dn_type, use_container_width=True):
+                st.session_state.current_page = "File Management"
+                st.rerun()
+
             st.markdown("---")
             # 🚪 Log Out button label
             if st.button("🚪 Log Out", use_container_width=True):
@@ -203,6 +209,33 @@ def main():
                 show_contact_form()
             st.write(f"This is your personalized {st.session_state.current_page.lower()} view.")
 
+        elif st.session_state.current_page == "File Management":
+            st.write(f"This is your personalized {st.session_state.current_page.lower()} view.")
+            st.title("Excel File Uploader App")
+
+            # 2. Add the file uploader widget manually restricted to Excel files
+            uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx", "xls"])
+
+            # 3. Process the file only if the user has uploaded one
+            if uploaded_file is not None:
+                try:
+                # Read the Excel file into a Pandas DataFrame
+                    df = pd.read_excel(uploaded_file)
+        
+                    # Display a success message
+                    st.success("File successfully uploaded!")
+        
+                    # 4. Display the data in an interactive table
+                    st.subheader("Preview Data")
+                    st.dataframe(df)
+                    # (Optional) Perform basic metrics or operations
+                    st.subheader("Data Summary")
+                    st.write(df.describe())
+        
+                except Exception as e:
+                    st.error(f"Error reading the Excel file: {e}")
+            else:
+                st.info("Please upload an Excel file to see the preview.")
     # --- BEFORE LOGIN VIEW (LOGIN / SIGNUP ONLY) ---
     else:
         # Fixed layout structure using proportional columns
