@@ -110,6 +110,12 @@ def main():
                 st.session_state.current_page = "File Management"
                 st.rerun()
 
+            mn_type = "primary" if st.session_state.current_page == "google" else "secondary"
+            if st.button("🔍 Google Search", type=mn_type, use_container_width=True):
+                st.session_state.current_page = "google"
+                st.rerun()  
+
+
             st.markdown("---")
             # 🚪 Log Out button label
             if st.button("🚪 Log Out", use_container_width=True):
@@ -236,6 +242,10 @@ def main():
                     st.error(f"Error reading the Excel file: {e}")
             else:
                 st.info("Please upload an Excel file to see the preview.")
+        elif st.session_state.current_page == "google":
+            if st.button("[Go to Google](https://www.google.com)"):
+                st.markdown('[Go to Google](https://www.google.com)', unsafe_allow_html=True)
+            # Here you would implement the logic to perform the search and display results
     # --- BEFORE LOGIN VIEW (LOGIN / SIGNUP ONLY) ---
     else:
         # Fixed layout structure using proportional columns
